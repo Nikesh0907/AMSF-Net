@@ -1,0 +1,9 @@
+torch
+torchvision
+numpy
+scipy
+h5py
+opencv-python-headless
+scikit-image
+tqdm
+matplotlib

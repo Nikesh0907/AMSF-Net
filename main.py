@@ -18,13 +18,14 @@ print (args)
 def main():
 
     train_ref, train_hr, test_ref, test_lr, test_hr = all_train_test_data_in()
-    if args.dataset == 'CAVE':
+    ds = str(args.dataset).lower()
+    if ds == 'cave':
       args.n_bands = 31
       args.n_select_bands = 3
-    elif args.dataset == 'houston':
+    elif ds in ('houston', 'houston_hsi'):
       args.n_bands = 46
       args.n_select_bands = 3
-    elif args.dataset == 'chikusei':
+    elif ds == 'chikusei':
       args.n_bands = 110
       args.n_select_bands = 8
 

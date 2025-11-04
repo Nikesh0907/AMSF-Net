@@ -1,18 +1,18 @@
 
 
-from models.AMSF import AMSF
+import os
+import numpy as np
+import scipy.io as sio
 
+from models.AMSF import AMSF
 from utils import *
 from metrics import calc_psnr, calc_rmse, calc_ergas, calc_sam, calc_cc, calc_moae, calc_uiqi, calc_ssim
-
 import args_parser
-# from torch.nn import functional as F
-# import cv2
 from time import *
-# from thop import profile
+from build_datasets_houston import *
+
 args = args_parser.args_parser()
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-from build_datasets_houston import *
 print(args)
 
 def main():
@@ -29,10 +29,13 @@ def main():
 
 
     # Load the trained model parameters
-    model_path = "F:\stt\code\MCT-Net-main\ASMF/houston_arch.pkl"
+    # Use the same model_path convention as main.py
+    model_path = args.model_path.replace('dataset', args.dataset)
     if os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path), strict=False)
-        print('Load the chekpoint of {}'.format(model_path))
+        print('Loaded checkpoint: {}'.format(model_path))
+    else:
+        print('Warning: checkpoint not found at {}. Proceeding with randomly initialized weights.'.format(model_path))
 
 
     # test_ref, test_lr, test_hr = test_list
@@ -66,18 +69,21 @@ def main():
     ref = ref.detach().cpu().numpy()
     out = out.detach().cpu().numpy()
 
-    refs = np.split(ref, 7, axis=0)
-    ref = [np.squeeze(a, axis=0) for a in refs]
-    outs = np.split(out, 7, axis=0)
-    out = [np.squeeze(a, axis=0) for a in outs]
-
-    rmse = [0]*len(ref)
-    psnr = [0]*len(ref)
+    os.makedirs('./result', exist_ok=True)
+    N = out.shape[0]
     PSNR = AverageMeter()
-    for i in range(len(ref)):
-        sio.savemat('./result/{}_{}_ref.mat'.format(i, args.dataset), {'ref':np.squeeze(refs[i], 0).transpose(1, 2, 0)})
-        sio.savemat('./result/{}_{}_out.mat'.format(i, args.dataset), {'out':np.squeeze(outs[i], 0).transpose(1, 2, 0)})   #保存字典
-    print('{:.4f}', PSNR.avg)
+    for i in range(N):
+        ref_i = ref[i]
+        out_i = out[i]
+        # save as HxWxC .mat for inspection
+        sio.savemat('./result/{}_{}_ref.mat'.format(i, args.dataset), {'ref': np.transpose(ref_i, (1, 2, 0))})
+        sio.savemat('./result/{}_{}_out.mat'.format(i, args.dataset), {'out': np.transpose(out_i, (1, 2, 0))})
+        try:
+            psnr_i = calc_psnr(ref_i, out_i)
+            PSNR.update(psnr_i, 1)
+        except Exception:
+            pass
+    print('Avg PSNR: {:.4f}'.format(PSNR.avg if PSNR.count>0 else 0.0))
 
 
 

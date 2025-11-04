@@ -6,7 +6,11 @@ import torch.nn.functional as F
 # import cv2
 # import math
 # from models.Transformer import TransformerModel
-from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+try:
+    from models.sync_batchnorm.batchnorm import SynchronizedBatchNorm2d
+except Exception:
+    # Fallback to standard BatchNorm2d if sync batchnorm is not available
+    from torch.nn import BatchNorm2d as SynchronizedBatchNorm2d
 from mymodels import MFF
 
 from functools import partial
